@@ -80,6 +80,8 @@ export function EditingSlider() {
                   sizes="(max-width: 1064px) 100vw, 1004px"
                   alt="Pink house after AI editing: windows, doors, chimney and flower planters added"
                   className="block w-full"
+                  loading="lazy"
+                  decoding="async"
                   draggable={false}
                 />
                 {/* Before image (clipped layer) */}
@@ -93,6 +95,8 @@ export function EditingSlider() {
                     sizes="(max-width: 1064px) 100vw, 1004px"
                     alt="Plain pink house before AI editing"
                     className="block h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                     draggable={false}
                   />
                 </div>

@@ -7,8 +7,6 @@ const HW = 10 // half-width of a cell's top diamond
 const HH = 5 // half-height of a cell's top diamond
 const VH = 10 // vertical height of a cell
 
-const SCALE = 3 // canvas pixels per world unit
-
 // shape index -> horizontal inset (cells) and height (cells)
 // 2 = billboard sprite (flowers, lanterns)
 const SHAPES = [
@@ -64,15 +62,16 @@ function loadAtlas() {
 }
 
 // Maps a 16x16 atlas tile onto the parallelogram at origin o with edges u, v
+// k = canvas pixels per world unit
 function face(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   tile: [number, number],
+  k: number,
   ox: number, oy: number,
   ux: number, uy: number,
   vx: number, vy: number,
 ) {
-  const k = SCALE
   ctx.setTransform(
     (k * ux) / TILE, (k * uy) / TILE,
     (k * vx) / TILE, (k * vy) / TILE,
@@ -85,6 +84,7 @@ function drawBlock(
   ctx: CanvasRenderingContext2D,
   b: (typeof BLOCKS)[number],
   img: HTMLImageElement,
+  k: number,
   lift: number,
 ) {
   const [bx, by, bz, ti, si] = b
@@ -95,7 +95,7 @@ function drawBlock(
     const w = (TEXTURES[ti] === 'lantern_s' ? 1.15 : 1.7) * HW
     const cx = px(bx, bz)
     const cy = py(bx + 0.5, bz + 0.5, by) + lift
-    face(ctx, img, tex, cx - w / 2, cy - w, w, 0, 0, w)
+    face(ctx, img, tex, k, cx - w / 2, cy - w, w, 0, 0, w)
     return
   }
 
@@ -109,21 +109,23 @@ function drawBlock(
   const dz = z1 - z0
 
   // top
-  face(ctx, img, tex.t,
+  face(ctx, img, tex.t, k,
     px(x0, z0), py(x0, z0, y1) + lift,
     dx * HW, dx * HH,
     -dz * HW, dz * HH)
   // right (+x)
-  face(ctx, img, tex.r,
+  face(ctx, img, tex.r, k,
     px(x1, z0), py(x1, z0, y1) + lift,
     -dz * HW, dz * HH,
     0, h * VH)
   // front (+z)
-  face(ctx, img, tex.f,
+  face(ctx, img, tex.f, k,
     px(x0, z1), py(x0, z1, y1) + lift,
     dx * HW, dx * HH,
     0, h * VH)
 }
+
+const CYCLE_MS = BUILD_MS + HOLD_MS + FADE_MS
 
 export function VoxelHouse({ className }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -136,62 +138,137 @@ export function VoxelHouse({ className }: { className?: string }) {
 
     let raf = 0
     let disposed = false
+    let atlas: HTMLImageElement | null = null
+    canvas.width = 0 // don't draw until sized to the layout
 
-    loadAtlas().then((atlasImg) => {
-      if (disposed) return
-      let start = performance.now()
-      let holdDrawn = false
+    // Blocks whose appear animation has finished are baked into an offscreen
+    // canvas once per reveal layer, so each frame only draws the few blocks
+    // that are still animating instead of all ~2k of them.
+    const settled = document.createElement('canvas')
+    const sctx = settled.getContext('2d')!
+    let settledUpTo = -1 // cycle time the settled layer was baked at
+    let k = 1 // canvas pixels per world unit
 
-      const redraw = (cycleT: number) => {
-        ctx.setTransform(1, 0, 0, 1, 0, 0)
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.imageSmoothingEnabled = false
-        for (let i = 0; i < BLOCKS.length; i++) {
-          const b = BLOCKS[i]
-          const d = delayOf(b)
-          if (cycleT < d) continue
-          const p = Math.min(1, (cycleT - d) / APPEAR_MS)
-          const ease = 1 - (1 - p) ** 3
-          ctx.globalAlpha = p
-          drawBlock(ctx, b, atlasImg, (1 - ease) * -14)
-        }
-        ctx.globalAlpha = 1
+    // Match the internal resolution to the displayed size (the old fixed
+    // resolution was ~5x the CSS size on phones, all wasted fill rate)
+    let cssW = 0
+    const resize = () => {
+      if (!cssW) return
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = Math.round(cssW * dpr)
+      if (w === canvas.width) return
+      canvas.width = w
+      canvas.height = Math.round((w * bounds.h) / bounds.w)
+      settled.width = canvas.width
+      settled.height = canvas.height
+      k = canvas.width / bounds.w
+      settledUpTo = -1
+    }
+    const ro = new ResizeObserver((entries) => {
+      cssW = entries[0].contentRect.width
+    })
+    ro.observe(canvas)
+
+    const bakeSettled = (cycleT: number) => {
+      sctx.setTransform(1, 0, 0, 1, 0, 0)
+      sctx.clearRect(0, 0, settled.width, settled.height)
+      sctx.imageSmoothingEnabled = false
+      for (const b of BLOCKS) {
+        if (delayOf(b) + APPEAR_MS <= cycleT) drawBlock(sctx, b, atlas!, k, 0)
       }
+      settledUpTo = cycleT
+    }
 
-      const frame = (now: number) => {
-        const cycleT = (now - start) % (BUILD_MS + HOLD_MS + FADE_MS)
+    const redraw = (cycleT: number) => {
+      if (settledUpTo < 0 || cycleT < settledUpTo || cycleT - settledUpTo > 185) {
+        bakeSettled(cycleT)
+      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.imageSmoothingEnabled = false
+      ctx.drawImage(settled, 0, 0)
+      for (const b of BLOCKS) {
+        const d = delayOf(b)
+        if (d > cycleT || d + APPEAR_MS <= settledUpTo) continue
+        const p = Math.min(1, (cycleT - d) / APPEAR_MS)
+        const ease = 1 - (1 - p) ** 3
+        ctx.globalAlpha = p
+        drawBlock(ctx, b, atlas!, k, (1 - ease) * -14)
+      }
+      ctx.globalAlpha = 1
+    }
 
-        if (cycleT < BUILD_MS) {
-          canvas.style.opacity = '1'
-          holdDrawn = false
+    let start = performance.now()
+    let pausedAt: number | null = null
+    let holdDrawn = false
+
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame)
+      resize()
+      if (!canvas.width) return
+      const cycleT = (now - start) % CYCLE_MS
+
+      if (cycleT < BUILD_MS) {
+        canvas.style.opacity = '1'
+        holdDrawn = false
+        redraw(cycleT)
+      } else if (cycleT < BUILD_MS + HOLD_MS) {
+        if (!holdDrawn) {
+          holdDrawn = true
           redraw(cycleT)
-        } else if (cycleT < BUILD_MS + HOLD_MS) {
-          if (!holdDrawn) {
-            holdDrawn = true
-            redraw(cycleT)
-          }
-        } else {
-          canvas.style.opacity = '0'
         }
-        raf = requestAnimationFrame(frame)
+      } else {
+        canvas.style.opacity = '0'
       }
+    }
 
+    // Freeze the animation entirely while the hero is offscreen or the tab
+    // is hidden; it was burning CPU during the whole page scroll on mobile
+    const pause = () => {
+      if (pausedAt !== null) return
+      pausedAt = performance.now()
+      cancelAnimationFrame(raf)
+      raf = 0
+    }
+    const resume = () => {
+      if (pausedAt === null || disposed || !atlas) return
+      start += performance.now() - pausedAt
+      pausedAt = null
+      raf = requestAnimationFrame(frame)
+    }
+
+    let onScreen = true
+    const syncRunning = () => {
+      if (onScreen && !document.hidden) resume()
+      else pause()
+    }
+    const io = new IntersectionObserver((entries) => {
+      onScreen = entries.some((e) => e.isIntersecting)
+      syncRunning()
+    })
+    io.observe(canvas)
+    document.addEventListener('visibilitychange', syncRunning)
+
+    loadAtlas().then((img) => {
+      if (disposed) return
+      atlas = img
       canvas.style.transition = `opacity ${FADE_MS}ms ease`
       start = performance.now()
-      raf = requestAnimationFrame(frame)
+      if (pausedAt === null) raf = requestAnimationFrame(frame)
     })
 
     return () => {
       disposed = true
       cancelAnimationFrame(raf)
+      io.disconnect()
+      ro.disconnect()
+      document.removeEventListener('visibilitychange', syncRunning)
     }
   }, [])
 
   return (
     <canvas
       ref={canvasRef}
-      width={Math.round(bounds.w * SCALE)}
-      height={Math.round(bounds.h * SCALE)}
       className={className}
       style={{ aspectRatio: `${bounds.w} / ${bounds.h}` }}
       aria-hidden

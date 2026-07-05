@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-pixel: "Silkscreen", monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --color-paper: #f5f1e6;
+  --color-card: #fffdf7;
+  --color-ink: #211e16;
+  --color-stone: #6d675a;
+  --color-grass: #4e9e3f;
+  --color-grass-dark: #3d7d31;
+  --color-leaf: #79c465;
+  --color-dirt: #8a5a38;
+  --color-sky: #c7e6f2;
+  --color-gold: #f2cc60;
+
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 96px;
+}
+
+body {
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(rgba(33, 30, 22, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(33, 30, 22, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(78, 158, 63, 0.25);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- */
+/* Game-UI bevel system                                              */
+/* ---------------------------------------------------------------- */
+
+/* Raised panel: light catches the top-left, shade on the bottom-right */
+.mc-raised {
+  border: 2px solid var(--color-ink);
+  background-color: var(--color-card);
+  box-shadow:
+    inset 3px 3px 0 0 rgba(255, 255, 255, 0.85),
+    inset -3px -3px 0 0 rgba(33, 30, 22, 0.14),
+    7px 7px 0 0 rgba(33, 30, 22, 0.92);
+}
+
+.mc-raised-sm {
+  border: 2px solid var(--color-ink);
+  background-color: var(--color-card);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.85),
+    inset -2px -2px 0 0 rgba(33, 30, 22, 0.14),
+    4px 4px 0 0 rgba(33, 30, 22, 0.92);
+}
+
+/* Sunken slot, like an inventory square */
+.mc-slot {
+  border: 2px solid var(--color-ink);
+  background-color: #e3ddcb;
+  box-shadow:
+    inset 3px 3px 0 0 rgba(33, 30, 22, 0.22),
+    inset -3px -3px 0 0 rgba(255, 255, 255, 0.75);
+}
+
+/* Chunky pressable button */
+.mc-btn {
+  border: 2px solid var(--color-ink);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
+    inset -2px -3px 0 0 rgba(0, 0, 0, 0.22),
+    5px 5px 0 0 rgba(33, 30, 22, 0.92);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.mc-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
+    inset -2px -3px 0 0 rgba(0, 0, 0, 0.22),
+    3px 3px 0 0 rgba(33, 30, 22, 0.92);
+}
+
+.mc-btn:active {
+  transform: translate(5px, 5px);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(0, 0, 0, 0.15),
+    inset -2px -2px 0 0 rgba(255, 255, 255, 0.2),
+    0 0 0 0 rgba(33, 30, 22, 0.92);
+}
+
+/* Dark "underground" variants for the cave section */
+.mc-dark-raised {
+  border: 2px solid #16140f;
+  background-color: #46423a;
+  box-shadow:
+    inset 3px 3px 0 0 rgba(255, 255, 255, 0.09),
+    inset -3px -3px 0 0 rgba(0, 0, 0, 0.35),
+    7px 7px 0 0 rgba(0, 0, 0, 0.55);
+}
+
+.mc-dark-slot {
+  border: 2px solid #16140f;
+  background-color: #2e2b25;
+  box-shadow:
+    inset 3px 3px 0 0 rgba(0, 0, 0, 0.45),
+    inset -3px -3px 0 0 rgba(255, 255, 255, 0.07);
+}
+
+/* ---------------------------------------------------------------- */
+/* Motion helpers                                                    */
+/* ---------------------------------------------------------------- */
+
+.blink-caret {
+  animation: caret-blink 1.06s step-end infinite;
+}
+
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
+}
+
+.float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(22px, -7px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.drift {
+  animation: drift 14s ease-in-out infinite;
+}
+
+.drift-slower {
+  animation: drift 22s ease-in-out infinite reverse;
+}
+
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.sparkle {
+  animation: sparkle 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drift,
+  .drift-slower,
+  .float-slow,
+  .sparkle {
+    animation: none;
+  }
+}

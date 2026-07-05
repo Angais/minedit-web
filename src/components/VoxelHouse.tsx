@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { ATLAS, TILE } from './atlas-data'
 import { BLOCKS, TEXTURES } from './house-data'
 
 // Isometric cell metrics (world units)
@@ -41,63 +42,60 @@ const bounds = (() => {
   return { minX: minX - PAD, minY: minY - PAD, w: maxX - minX + PAD * 2, h: maxY - minY + PAD * 2 }
 })()
 
-type Textures = (HTMLImageElement | { t: HTMLImageElement; f: HTMLImageElement; r: HTMLImageElement })[]
+// atlas tile offsets per TEXTURES entry: sprite tile, or one tile per face
+type Tex = [number, number] | { t: [number, number]; f: [number, number]; r: [number, number] }
 
-let texturesPromise: Promise<Textures> | null = null
+const TEXTURE_TILES: Tex[] = TEXTURES.map((name) =>
+  name.endsWith('_s')
+    ? ATLAS[name]
+    : { t: ATLAS[`${name}_t`], f: ATLAS[`${name}_f`], r: ATLAS[`${name}_r`] },
+)
 
-function loadImage(src: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
+let atlasPromise: Promise<HTMLImageElement> | null = null
+
+function loadAtlas() {
+  atlasPromise ??= new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
     img.onerror = reject
-    img.src = src
+    img.src = '/textures/atlas.png'
   })
+  return atlasPromise
 }
 
-function loadTextures(): Promise<Textures> {
-  texturesPromise ??= Promise.all(
-    TEXTURES.map(async (name) => {
-      if (name.endsWith('_s')) return loadImage(`/textures/baked/${name}.png`)
-      const [t, f, r] = await Promise.all(
-        ['t', 'f', 'r'].map((face) => loadImage(`/textures/baked/${name}_${face}.png`)),
-      )
-      return { t, f, r }
-    }),
-  )
-  return texturesPromise
-}
-
-// Maps a 16x16 texture onto the parallelogram at origin o with edges u, v
+// Maps a 16x16 atlas tile onto the parallelogram at origin o with edges u, v
 function face(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
+  tile: [number, number],
   ox: number, oy: number,
   ux: number, uy: number,
   vx: number, vy: number,
 ) {
   const k = SCALE
   ctx.setTransform(
-    (k * ux) / 16, (k * uy) / 16,
-    (k * vx) / 16, (k * vy) / 16,
+    (k * ux) / TILE, (k * uy) / TILE,
+    (k * vx) / TILE, (k * vy) / TILE,
     k * (ox - bounds.minX), k * (oy - bounds.minY),
   )
-  ctx.drawImage(img, 0, 0)
+  ctx.drawImage(img, tile[0], tile[1], TILE, TILE, 0, 0, TILE, TILE)
 }
 
 function drawBlock(
   ctx: CanvasRenderingContext2D,
   b: (typeof BLOCKS)[number],
-  tex: Textures[number],
+  img: HTMLImageElement,
   lift: number,
 ) {
-  const [bx, by, bz, , si] = b
+  const [bx, by, bz, ti, si] = b
+  const tex = TEXTURE_TILES[ti]
 
-  if (tex instanceof HTMLImageElement) {
+  if (Array.isArray(tex)) {
     // billboard sprite standing on the cell floor; lanterns are smaller
-    const w = (TEXTURES[b[3]] === 'lantern_s' ? 1.15 : 1.7) * HW
+    const w = (TEXTURES[ti] === 'lantern_s' ? 1.15 : 1.7) * HW
     const cx = px(bx, bz)
     const cy = py(bx + 0.5, bz + 0.5, by) + lift
-    face(ctx, tex, cx - w / 2, cy - w, w, 0, 0, w)
+    face(ctx, img, tex, cx - w / 2, cy - w, w, 0, 0, w)
     return
   }
 
@@ -111,17 +109,17 @@ function drawBlock(
   const dz = z1 - z0
 
   // top
-  face(ctx, tex.t,
+  face(ctx, img, tex.t,
     px(x0, z0), py(x0, z0, y1) + lift,
     dx * HW, dx * HH,
     -dz * HW, dz * HH)
   // right (+x)
-  face(ctx, tex.r,
+  face(ctx, img, tex.r,
     px(x1, z0), py(x1, z0, y1) + lift,
     -dz * HW, dz * HH,
     0, h * VH)
   // front (+z)
-  face(ctx, tex.f,
+  face(ctx, img, tex.f,
     px(x0, z1), py(x0, z1, y1) + lift,
     dx * HW, dx * HH,
     0, h * VH)
@@ -139,7 +137,7 @@ export function VoxelHouse({ className }: { className?: string }) {
     let raf = 0
     let disposed = false
 
-    loadTextures().then((textures) => {
+    loadAtlas().then((atlasImg) => {
       if (disposed) return
       let start = performance.now()
       let holdDrawn = false
@@ -155,7 +153,7 @@ export function VoxelHouse({ className }: { className?: string }) {
           const p = Math.min(1, (cycleT - d) / APPEAR_MS)
           const ease = 1 - (1 - p) ** 3
           ctx.globalAlpha = p
-          drawBlock(ctx, b, textures[b[3]], (1 - ease) * -14)
+          drawBlock(ctx, b, atlasImg, (1 - ease) * -14)
         }
         ctx.globalAlpha = 1
       }

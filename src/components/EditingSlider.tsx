@@ -114,16 +114,21 @@ export function EditingSlider() {
                 </div>
 
                 {/* Labels */}
-                <div className="pointer-events-none absolute top-4 left-4 border-2 border-black/50 bg-[#211e16]/92 px-3 py-2 font-mono text-[11.5px] tracking-wide text-[#f0ede2]">
-                  <span className="font-pixel mr-2 text-[9px] text-[#8a877a]">BEFORE</span>
-                  built by hand
+                <div className="pointer-events-none absolute top-2 left-2 border-2 border-black/50 bg-[#211e16]/92 px-2 py-1.5 font-mono text-[11.5px] tracking-wide text-[#f0ede2] sm:top-4 sm:left-4 sm:px-3 sm:py-2">
+                  <span className="font-pixel text-[9px] text-[#8a877a] sm:mr-2">BEFORE</span>
+                  <span className="hidden sm:inline">built by hand</span>
                 </div>
-                <div className="pointer-events-none absolute top-4 right-4 border-2 border-black/50 bg-[#211e16]/92 px-3 py-2 font-mono text-[11.5px] tracking-wide text-leaf">
-                  <span className="font-pixel mr-2 text-[9px] text-[#8a877a]">AFTER</span>
-                  /edit make the house look better
+                <div className="pointer-events-none absolute top-2 right-2 border-2 border-black/50 bg-[#211e16]/92 px-2 py-1.5 font-mono text-[11.5px] tracking-wide text-leaf sm:top-4 sm:right-4 sm:px-3 sm:py-2">
+                  <span className="font-pixel text-[9px] text-[#8a877a] sm:mr-2">AFTER</span>
+                  <span className="hidden sm:inline">/edit make the house look better</span>
                 </div>
               </div>
             </div>
+            {/* On phones the AFTER label only fits the pill, so show the prompt below */}
+            <p className="mt-3 text-center font-mono text-[12px] text-stone sm:hidden">
+              <span className="text-grass-dark">/edit</span> make the house look
+              better
+            </p>
           </div>
         </Reveal>
 

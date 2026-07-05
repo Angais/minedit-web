@@ -141,13 +141,23 @@ export function VoxelHouse({ className }: { className?: string }) {
     let atlas: HTMLImageElement | null = null
     canvas.width = 0 // don't draw until sized to the layout
 
-    // Blocks whose appear animation has finished are baked into an offscreen
-    // canvas once per reveal layer, so each frame only draws the few blocks
-    // that are still animating instead of all ~2k of them.
+    // Blocks whose appear animation has finished are baked once into an
+    // offscreen canvas, so each frame only draws the few blocks that are
+    // still animating instead of all ~2k of them. Baking in settle order
+    // preserves painter order for every pair that can overlap on screen.
     const settled = document.createElement('canvas')
     const sctx = settled.getContext('2d')!
-    let settledUpTo = -1 // cycle time the settled layer was baked at
+    const baked = new Uint8Array(BLOCKS.length)
+    let bakedCount = 0
     let k = 1 // canvas pixels per world unit
+
+    const resetSettled = () => {
+      sctx.setTransform(1, 0, 0, 1, 0, 0)
+      sctx.clearRect(0, 0, settled.width, settled.height)
+      sctx.imageSmoothingEnabled = false
+      baked.fill(0)
+      bakedCount = 0
+    }
 
     // Match the internal resolution to the displayed size (the old fixed
     // resolution was ~5x the CSS size on phones, all wasted fill rate)
@@ -162,34 +172,36 @@ export function VoxelHouse({ className }: { className?: string }) {
       settled.width = canvas.width
       settled.height = canvas.height
       k = canvas.width / bounds.w
-      settledUpTo = -1
+      resetSettled()
+      rebakeNeeded = true
     }
+    let rebakeNeeded = false
     const ro = new ResizeObserver((entries) => {
       cssW = entries[0].contentRect.width
     })
     ro.observe(canvas)
 
-    const bakeSettled = (cycleT: number) => {
-      sctx.setTransform(1, 0, 0, 1, 0, 0)
-      sctx.clearRect(0, 0, settled.width, settled.height)
-      sctx.imageSmoothingEnabled = false
-      for (const b of BLOCKS) {
-        if (delayOf(b) + APPEAR_MS <= cycleT) drawBlock(sctx, b, atlas!, k, 0)
-      }
-      settledUpTo = cycleT
-    }
-
     const redraw = (cycleT: number) => {
-      if (settledUpTo < 0 || cycleT < settledUpTo || cycleT - settledUpTo > 185) {
-        bakeSettled(cycleT)
+      // bake newly settled blocks into the offscreen canvas (once each);
+      // BLOCKS is painter-sorted, so same-frame batches stay ordered too
+      for (let i = 0; i < BLOCKS.length; i++) {
+        if (!baked[i] && delayOf(BLOCKS[i]) + APPEAR_MS <= cycleT) {
+          drawBlock(sctx, BLOCKS[i], atlas!, k, 0)
+          baked[i] = 1
+          bakedCount++
+        }
       }
+      rebakeNeeded = false
+
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.imageSmoothingEnabled = false
       ctx.drawImage(settled, 0, 0)
-      for (const b of BLOCKS) {
+      if (bakedCount === BLOCKS.length) return
+      for (let i = 0; i < BLOCKS.length; i++) {
+        const b = BLOCKS[i]
         const d = delayOf(b)
-        if (d > cycleT || d + APPEAR_MS <= settledUpTo) continue
+        if (baked[i] || d > cycleT) continue
         const p = Math.min(1, (cycleT - d) / APPEAR_MS)
         const ease = 1 - (1 - p) ** 3
         ctx.globalAlpha = p
@@ -201,19 +213,22 @@ export function VoxelHouse({ className }: { className?: string }) {
     let start = performance.now()
     let pausedAt: number | null = null
     let holdDrawn = false
+    let prevCycleT = Infinity
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame)
       resize()
       if (!canvas.width) return
       const cycleT = (now - start) % CYCLE_MS
+      if (cycleT < prevCycleT) resetSettled() // new build cycle
+      prevCycleT = cycleT
 
       if (cycleT < BUILD_MS) {
         canvas.style.opacity = '1'
         holdDrawn = false
         redraw(cycleT)
       } else if (cycleT < BUILD_MS + HOLD_MS) {
-        if (!holdDrawn) {
+        if (!holdDrawn || rebakeNeeded) {
           holdDrawn = true
           redraw(cycleT)
         }

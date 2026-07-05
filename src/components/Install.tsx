@@ -1,5 +1,5 @@
 import { Reveal } from './Reveal'
-import { GrassStrip, StoneStrip, VoxelCube, Sparkle } from './Pixel'
+import { GrassStrip, StoneStrip, Sparkle } from './Pixel'
 
 const steps = [
   {
@@ -96,7 +96,7 @@ export function Footer() {
       <div className="bg-[#4a3521] px-4 pt-10 pb-4">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 pb-8 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <VoxelCube className="h-5 w-5" />
+            <img src="/logo.png" alt="" className="h-5 w-5 border border-black/30" />
             <span className="text-[14px] text-[#d9cbb8]">
               Minedit is MIT licensed. Made by{' '}
               <a

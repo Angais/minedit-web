@@ -1,5 +1,4 @@
 import { motion } from 'motion/react'
-import { VoxelCube } from './Pixel'
 
 const links = [
   { label: 'Editing', href: '#editing' },
@@ -19,7 +18,11 @@ export function Nav() {
     >
       <nav className="mx-auto flex h-[70px] max-w-6xl items-center justify-between px-4 sm:px-6">
         <a href="#" className="group flex items-center gap-2.5">
-          <VoxelCube className="h-7 w-7 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-6" />
+          <img
+            src="/logo.png"
+            alt=""
+            className="h-7 w-7 border-2 border-ink/15 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-6"
+          />
           <span className="font-display text-[18px] font-bold tracking-tight">Minedit</span>
         </a>
 

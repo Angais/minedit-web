@@ -6,6 +6,7 @@ import { Showcase } from './components/Showcase'
 import { Features } from './components/Features'
 import { Posts } from './components/Posts'
 import { Install, Footer } from './components/Install'
+import { Faq } from './components/Faq'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Features />
         <Posts />
         <Install />
+        <Faq />
       </main>
       <Footer />
       <Analytics />

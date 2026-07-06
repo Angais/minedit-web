@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minedit | AI Minecraft building mod for NeoForge</title>
+    <title>Minedit | AI Minecraft Mod that Builds from Text (NeoForge)</title>
     <meta
       name="description"
       content="Minedit is a free, open-source NeoForge mod that lets AI build and edit Minecraft structures from plain text. Describe a build and watch it rise."
@@ -17,7 +17,7 @@
 
     <!-- Open Graph (Facebook, Discord, most link previews) -->
     <meta property="og:site_name" content="Minedit" />
-    <meta property="og:title" content="Minedit | AI Minecraft building mod for NeoForge" />
+    <meta property="og:title" content="Minedit | AI Minecraft Mod that Builds from Text (NeoForge)" />
     <meta
       property="og:description"
       content="Describe a build. Watch it rise. A free, open-source NeoForge mod powered by the AI model of your choice."
@@ -32,7 +32,7 @@
     <!-- X / Twitter card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:creator" content="@Angaisb_" />
-    <meta name="twitter:title" content="Minedit | AI Minecraft building mod for NeoForge" />
+    <meta name="twitter:title" content="Minedit | AI Minecraft Mod that Builds from Text (NeoForge)" />
     <meta
       name="twitter:description"
       content="Describe a build. Watch it rise. A free, open-source NeoForge mod powered by the AI model of your choice."
@@ -45,6 +45,62 @@
         "@type": "WebSite",
         "name": "Minedit",
         "url": "https://minedit.angaisb.com/"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is Minedit free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The mod itself is free and open source under the MIT license. What can cost money are the AI calls: OpenRouter bills your API key per request, and the Codex or Cursor bridge consumes your existing plan limits. Minedit prints token usage and estimated cost in chat after every generation, so nothing is hidden."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it work with any AI model?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Mostly, yes. Through OpenRouter you can pick from hundreds of models and switch at any time with the /model command. You can also run the local bridge and let Codex or Cursor agents handle the build using your existing login, without a separate API key."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What Minecraft version does it need?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Current releases target Minecraft 26.1.2 with NeoForge 26.1.2.73. Download the matching jar from the GitHub releases page and drop it into your mods folder."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can the AI edit builds I made by hand?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. The /edit command reads whatever blocks are inside your selection, generated or handmade, and asks the model for changes based on what is actually there. Quick edit sends a compact snapshot so small requests come back as small patches instead of a rebuild."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What if a build ruins my world?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You can undo it. /reset build restores the world snapshot from before the build, and Minedit keeps your last five snapshots, so you can step further back. Generated code also runs in a restricted sandbox with no Java, filesystem or network access, capped at 500k block operations and 30 seconds per run. It is still experimental software though, so back up your world before large builds."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it work in multiplayer?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, Minedit is server-aware. It runs on dedicated servers, operators can cancel any player's generation, and when several players build at once the block placement budget is shared between them instead of processing one build at a time."
+            }
+          }
+        ]
       }
     </script>
     <script type="application/ld+json">

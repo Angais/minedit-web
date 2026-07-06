@@ -20,7 +20,7 @@ export function Showcase() {
               <p className="max-w-lg text-[16.5px] leading-relaxed text-stone md:ml-auto">
                 No schematics, no templates. The model plans the whole
                 structure from scratch, writes the builder code, and Minedit
-                places every block inside your world.
+                runs it inside your world.
               </p>
             </Reveal>
           </div>

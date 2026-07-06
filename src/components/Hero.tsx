@@ -143,8 +143,8 @@ export function Hero() {
             className="mt-7 max-w-xl text-center text-[17px] leading-relaxed text-stone lg:text-left"
           >
             Minedit lets AI models build and edit Minecraft structures for you.
-            Select an area, type what you want, and watch it appear block by
-            block. Then keep refining it with plain words.
+            Select an area, type what you want, and watch it appear. Then keep
+            refining it with plain words.
           </motion.p>
 
           {/* Command bar, styled like the in-game chat */}
